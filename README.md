@@ -15,9 +15,9 @@ A bit crusher with bit manipulation. `rate` in and knob controls the sample rate
 
 **clip**
 
-A hard clipper with inner `push` and outer limits `limit` and center offsets `pos` for each.
+A hard clipper with inner `push` and outer limits `limit` and center offsets `pos` for each. `pull` zeros the inner limit and `clip` enables/disables the outer limit.
 
 # Licenses
 All **source code** is copyright © 2019 aridacity and licensed under [BSD-3-Clause](LICENSE)
 
-All **panel and component graphics** in `res/*` are licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+All **panel and component graphics** in `res/*` are copyright © 2019 aridacity and licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
