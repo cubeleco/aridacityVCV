@@ -23,66 +23,78 @@ struct Clip : Module {
 		NUM_OUTPUTS
 	};
 
-	Clip() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS) {}
-	void step() override;
+	Clip();
+	void process(const ProcessArgs &args) override;
 };
 
+Clip::Clip() {
+	config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS);
+	configParam(Clip::PULL_PARAM, 0.f, 1.f, 0.f, "enable pull");
+	configParam(Clip::ENABLE_LIMIT_PARAM, 0.f, 1.f, 1.f, "enable limiter");
+	configParam(Clip::GAIN_PARAM, 0.f, 2.f, 1.f, "gain", "x");
+	configParam(Clip::PUSH_PARAM, 0.f, 2.f, 0.f, "push");
+	configParam(Clip::LIMIT_PARAM, 0.f, 2.f, 1.f, "limit");
+}
 
-void Clip::step() {
-	// if(!(inputs[AUDIO_INPUT].active && outputs[AUDIO_OUTPUT].active))
-	// 	return;
+void Clip::process(const ProcessArgs &args) {
+	const int channels = inputs[AUDIO_INPUT].getChannels();
+	outputs[AUDIO_OUTPUT].setChannels(channels);
 
-	float audi = (inputs[AUDIO_INPUT].value / 5.f);
 
-	//add gain
-	audi *= params[GAIN_PARAM].value + (inputs[GAIN_INPUT].value / 10.f);
+	for(int c = 0; c < channels; ++c) {
+		const float pushSiz = params[PUSH_PARAM].getValue() + (inputs[PUSH_SIZ_INPUT].getVoltage(c) / 10.f);
+		const float pushCent = inputs[PUSH_POS_INPUT].getVoltage(c) / 5.f;
+		//add center offset
+		const float pushHi = pushCent + pushSiz;
+		const float pushLo = pushCent - pushSiz;
 
-	const float pushSiz = params[PUSH_PARAM].value + (inputs[PUSH_SIZ_INPUT].value / 10.f);
-	const float pushCent = (inputs[PUSH_POS_INPUT].value / 5.f);
-	//add center offset
-	const float pushHi = pushCent + pushSiz;
-	const float pushLo = pushCent - pushSiz;
+		const float limit = params[LIMIT_PARAM].getValue() + (inputs[LIMIT_SIZ_INPUT].getVoltage(c) / 10.f);
+		const float limCenter = inputs[LIMIT_POS_INPUT].getVoltage(c) / 5.f;
 
-	//push inside if in range
-	if( (audi <= pushHi) && (audi >= pushLo) ) {
-		if(params[PULL_PARAM].value >= 1.f)
-			audi = 0.f;
-		else
-			audi = (audi > 0.f? pushHi : pushLo);
+		float audi = (inputs[AUDIO_INPUT].getVoltage(c) / 5.f);
+
+		//add gain
+		audi *= params[GAIN_PARAM].getValue() + (inputs[GAIN_INPUT].getVoltage(c) / 10.f);
+
+		//push inside if in range
+		if( (audi < pushHi) && (audi > pushLo) ) {
+			if(params[PULL_PARAM].getValue() >= 1.f)
+				audi = 0.f;
+			else
+				audi = (audi > 0.f? pushHi : pushLo);
+		}
+
+		//clip limit outside 
+		if(params[ENABLE_LIMIT_PARAM].getValue() >= 1.f) {
+			audi = clamp(audi, limCenter-limit, limCenter+limit);
+		}
+		outputs[AUDIO_OUTPUT].setVoltage(audi * 5.f, c);
 	}
-
-	//clip limit outside 
-	if(params[ENABLE_LIMIT_PARAM].value >= 1.f) {
-		const float limit = params[LIMIT_PARAM].value + (inputs[LIMIT_SIZ_INPUT].value / 10.f);
-		const float limCenter = inputs[LIMIT_POS_INPUT].value / 5.f;
-		
-		audi = clamp(audi, (-limit)+limCenter, limit+limCenter);
-	}
-	outputs[AUDIO_OUTPUT].value = audi * 5.f;
 }
 
 struct ClipWidget : ModuleWidget {
-	ClipWidget(Clip *module) : ModuleWidget(module) {
-		setPanel(SVG::load(assetPlugin(plugin, "res/Clip.svg")));
+	ClipWidget(Clip *module) {
+		setModule(module);
+		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Clip.svg")));
 
-		addChild(Widget::create<ScrewBlack>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(Widget::create<ScrewBlack>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<ScrewBlack>(Vec(RACK_GRID_WIDTH, 0)));
+		addChild(createWidget<ScrewBlack>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(ParamWidget::create<SmallWhiteSwitch>(Vec(10, 120), module, Clip::PULL_PARAM, 0.f, 1.f, 0.f));
-		addParam(ParamWidget::create<SmallWhiteSwitch>(Vec(40, 120), module, Clip::ENABLE_LIMIT_PARAM, 0.f, 1.f, 1.f));
-		addParam(ParamWidget::create<WhiteKnob>(Vec(10,  40), module, Clip::GAIN_PARAM, 0.f, 2.f, 1.f));
-		addParam(ParamWidget::create<WhiteKnob>(Vec(10, 160), module, Clip::PUSH_PARAM, 0.f, 2.f, 0.f));
-		addParam(ParamWidget::create<WhiteKnob>(Vec(10, 240), module, Clip::LIMIT_PARAM, 0.f, 2.f, 1.f));
+		addParam(createParam<SmallWhiteSwitch>(Vec(10, 120), module, Clip::PULL_PARAM));
+		addParam(createParam<SmallWhiteSwitch>(Vec(40, 120), module, Clip::ENABLE_LIMIT_PARAM));
+		addParam(createParam<WhiteKnob>(Vec(10,  40), module, Clip::GAIN_PARAM));
+		addParam(createParam<WhiteKnob>(Vec(10, 160), module, Clip::PUSH_PARAM));
+		addParam(createParam<WhiteKnob>(Vec(10, 240), module, Clip::LIMIT_PARAM));
 
-		addInput(Port::create<SmallWhitePort>(Vec( 4,  80), Port::INPUT, module, Clip::GAIN_INPUT));
-		addInput(Port::create<SmallWhitePort>(Vec( 4, 200), Port::INPUT, module, Clip::PUSH_SIZ_INPUT));
-		addInput(Port::create<SmallWhitePort>(Vec(35, 200), Port::INPUT, module, Clip::PUSH_POS_INPUT));
-		addInput(Port::create<SmallWhitePort>(Vec( 4, 280), Port::INPUT, module, Clip::LIMIT_SIZ_INPUT));
-		addInput(Port::create<SmallWhitePort>(Vec(35, 280), Port::INPUT, module, Clip::LIMIT_POS_INPUT));
+		addInput(createInput<SmallWhitePort>(Vec( 4,  80), module, Clip::GAIN_INPUT));
+		addInput(createInput<SmallWhitePort>(Vec( 4, 200), module, Clip::PUSH_SIZ_INPUT));
+		addInput(createInput<SmallWhitePort>(Vec(35, 200), module, Clip::PUSH_POS_INPUT));
+		addInput(createInput<SmallWhitePort>(Vec( 4, 280), module, Clip::LIMIT_SIZ_INPUT));
+		addInput(createInput<SmallWhitePort>(Vec(35, 280), module, Clip::LIMIT_POS_INPUT));
 
-		addInput(Port::create<SmallWhitePort>(Vec( 4, 330), Port::INPUT, module, Clip::AUDIO_INPUT));
-		addOutput(Port::create<SmallBlackPort>(Vec(35, 330), Port::OUTPUT, module, Clip::AUDIO_OUTPUT));
+		addInput(createInput<SmallWhitePort>(Vec( 4, 330), module, Clip::AUDIO_INPUT));
+		addOutput(createOutput<SmallBlackPort>(Vec(35, 330), module, Clip::AUDIO_OUTPUT));
 	}
 };
 
-Model *modelClip = Model::create<Clip, ClipWidget>("aridacity", "Clip", "Clip limiter", AMPLIFIER_TAG, LIMITER_TAG);
+Model *modelClip = createModel<Clip, ClipWidget>("Clip");
