@@ -14,7 +14,7 @@
    viewBox="0 0 15.875001 100.54166"
    version="1.1"
    id="svg8"
-   inkscape:version="0.91 r13725"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
    sodipodi:docname="BCrush.svg">
   <defs
      id="defs2" />
@@ -25,9 +25,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.8144545"
-     inkscape:cx="26.157279"
-     inkscape:cy="353.41623"
+     inkscape:zoom="8"
+     inkscape:cx="-23.488653"
+     inkscape:cy="283.57474"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -36,9 +36,9 @@
      inkscape:snap-page="true"
      inkscape:bbox-nodes="false"
      inkscape:snap-bbox-edge-midpoints="true"
-     inkscape:window-width="1388"
+     inkscape:window-width="1920"
      inkscape:window-height="1078"
-     inkscape:window-x="531"
+     inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
      height="128.5mm"
@@ -46,15 +46,16 @@
      inkscape:snap-center="true"
      inkscape:bbox-paths="false"
      inkscape:snap-grids="true"
-     inkscape:snap-others="true"
+     inkscape:snap-others="false"
      inkscape:snap-bbox-midpoints="true"
-     inkscape:snap-nodes="false">
+     inkscape:snap-nodes="true"
+     showguides="false">
     <inkscape:grid
        type="xygrid"
        id="grid4151"
        units="px"
-       spacingx="7.9375005"
-       spacingy="0.66145829" />
+       spacingx="3.96875"
+       spacingy="0.13229167" />
   </sodipodi:namedview>
   <metadata
      id="metadata5">
@@ -64,7 +65,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
