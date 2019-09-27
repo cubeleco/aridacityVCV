@@ -60,12 +60,13 @@ void BCrush::process(const ProcessArgs &args) {
 		else	return;
 	}
 	//process input signal channels
+	const float resParam = params[AMP_RES_PARAM].getValue();
 	const int channels = inputs[AUDIO_INPUT].getChannels();
 	outputs[AUDIO_OUTPUT].setChannels(channels);
 
 	for(int c = 0; c < channels; ++c) {
 		//limit resolution to avoid divide by zero
-		ampRes = std::max( (params[AMP_RES_PARAM].getValue() + inputs[AMP_RES_INPUT].getVoltage(c)) * maxRes, 1.f);
+		ampRes = std::max( (resParam + inputs[AMP_RES_INPUT].getVoltage(c)) * maxRes, 1.f);
 
 		float audi = (inputs[AUDIO_INPUT].getVoltage(c) / 5.f);
 
