@@ -29,11 +29,19 @@ struct Clip : Module {
 
 Clip::Clip() {
 	config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS);
-	configParam(Clip::PULL_PARAM, 0.f, 1.f, 0.f, "enable pull");
-	configParam(Clip::ENABLE_LIMIT_PARAM, 0.f, 1.f, 1.f, "enable limiter");
-	configParam(Clip::GAIN_PARAM, 0.f, 2.f, 1.f, "gain", "x");
-	configParam(Clip::PUSH_PARAM, 0.f, 2.f, 0.f, "push");
-	configParam(Clip::LIMIT_PARAM, 0.f, 2.f, 1.f, "limit");
+	configBypass(Clip::AUDIO_INPUT, Clip::AUDIO_OUTPUT);
+	configSwitch(Clip::PULL_PARAM, 0, 1, 0, "Inner limit", {"Push", "Pull"});
+	configSwitch(Clip::ENABLE_LIMIT_PARAM, 0, 1, 1, "Outer limit", {"off", "on"});
+	configParam(Clip::GAIN_PARAM, 0.f, 2.f, 1.f, "Gain");
+	configParam(Clip::PUSH_PARAM, 0.f, 2.f, 0.f, "Push");
+	configParam(Clip::LIMIT_PARAM, 0.f, 2.f, 1.f, "Limit");
+	configInput(Clip::AUDIO_INPUT, "Audio");
+	configInput(Clip::GAIN_INPUT, "Gain");
+	configInput(Clip::PUSH_SIZ_INPUT, "Push");
+	configInput(Clip::PUSH_POS_INPUT, "Push Position");
+	configInput(Clip::LIMIT_SIZ_INPUT, "Limit");
+	configInput(Clip::LIMIT_POS_INPUT, "Limit Position");
+	configOutput(Clip::AUDIO_OUTPUT, "Audio");
 }
 
 void Clip::process(const ProcessArgs &args) {
@@ -51,17 +59,15 @@ void Clip::process(const ProcessArgs &args) {
 		const float limit = params[LIMIT_PARAM].getValue() + (inputs[LIMIT_SIZ_INPUT].getVoltage(c) / 10.f);
 		const float limCenter = inputs[LIMIT_POS_INPUT].getVoltage(c) / 5.f;
 
-		float audi = (inputs[AUDIO_INPUT].getVoltage(c) / 5.f);
+		float audi = inputs[AUDIO_INPUT].getVoltage(c) / 5.f;
 
 		//add gain
 		audi *= params[GAIN_PARAM].getValue() + (inputs[GAIN_INPUT].getVoltage(c) / 10.f);
 
 		//push inside if in range
-		if( (audi < pushHi) && (audi > pushLo) ) {
-			if(params[PULL_PARAM].getValue() >= 1.f)
-				audi = 0.f;
-			else
-				audi = (audi > 0.f? pushHi : pushLo);
+		if(audi < pushHi && audi > pushLo) {
+			audi = (params[PULL_PARAM].getValue() >= 1.f) ? 0.f :
+				(audi > 0.f? pushHi : pushLo);
 		}
 
 		//clip limit outside 

@@ -26,21 +26,33 @@ struct BCrush : Module {
 	};
 
 	dsp::SchmittTrigger holdTrigger;
-	
-	const float maxRes = 12.8f; //6.4f
-	float	ampRes = maxRes,
-			sampleRate = APP->engine->getSampleRate(),
-			curSampleTime = 0.f;
 
-	BCrush();	
+	const float maxRes = 12.8f;
+	float curSampleTime = 0.f;
+
+	BCrush();
 	void process(const ProcessArgs &args) override;
-	void onSampleRateChange() override;
+	void onSampleRateChange(const SampleRateChangeEvent& e) override;
 };
 
 BCrush::BCrush() {
 	config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS);
-	configParam(BCrush::SAMPLE_RATE_PARAM, 0.f, 1.f, 1.f, "sample rate", "Hz", 0.f, sampleRate);
-	configParam(BCrush::AMP_RES_PARAM, 0.f, 10.f, 10.f, "resolution", "", 0.f, maxRes);
+	configParam(BCrush::SAMPLE_RATE_PARAM, 0.f, 1.f, 1.f, "Sample rate", "Hz", 0.f, APP->engine->getSampleRate());
+	configParam(BCrush::AMP_RES_PARAM, 0.f, 10.f, 10.f, "Resolution", "", 0.f, maxRes);
+	configBypass(BCrush::AUDIO_INPUT, BCrush::AUDIO_OUTPUT);
+
+	configInput(BCrush::AUDIO_INPUT, "Audio");
+	configInput(BCrush::SAMPLE_RATE_INPUT, "Sample rate");
+	configInput(BCrush::CLOCK_HOLD_INPUT, "Sample and hold");
+	configInput(BCrush::AMP_RES_INPUT, "Resolution");
+	configInput(BCrush::GAIN_INPUT, "Gain");
+	configInput(BCrush::SHIFTL_INPUT, "Bit-shift left");
+	configInput(BCrush::SHIFTR_INPUT, "Bit-shift right");
+	configInput(BCrush::AND_INPUT, "AND logic");
+	configInput(BCrush::OR_INPUT, "OR logic");
+	configInput(BCrush::XOR_INPUT, "XOR logic");
+	configInput(BCrush::NOT_INPUT, "NOT logic");
+	configOutput(BCrush::AUDIO_OUTPUT, "Audio");
 }
 
 void BCrush::process(const ProcessArgs &args) {
@@ -51,12 +63,15 @@ void BCrush::process(const ProcessArgs &args) {
 	}
 	else {
 		//add time according to sample rate
-		curSampleTime += clamp( (params[SAMPLE_RATE_PARAM].getValue() + (inputs[SAMPLE_RATE_INPUT].getVoltage() / 10.f)) * sampleRate, 100.f, sampleRate );
+		curSampleTime += clamp( (params[SAMPLE_RATE_PARAM].getValue() +
+					(inputs[SAMPLE_RATE_INPUT].getVoltage() / 10.f)) * args.sampleRate,
+					100.f, args.sampleRate );
 
 		//update output if enough time has passed
-		if(curSampleTime >= sampleRate) {
-			curSampleTime -= sampleRate;
+		if(curSampleTime >= args.sampleRate) {
+			curSampleTime -= args.sampleRate;
 		}
+		//return to keep output sample
 		else	return;
 	}
 	//process input signal channels
@@ -66,9 +81,9 @@ void BCrush::process(const ProcessArgs &args) {
 
 	for(int c = 0; c < channels; ++c) {
 		//limit resolution to avoid divide by zero
-		ampRes = std::max( (resParam + inputs[AMP_RES_INPUT].getVoltage(c)) * maxRes, 1.f);
+		float ampRes = std::max( (resParam + inputs[AMP_RES_INPUT].getVoltage(c)) * maxRes, 1.f);
 
-		float audi = (inputs[AUDIO_INPUT].getVoltage(c) / 5.f);
+		float audi = inputs[AUDIO_INPUT].getVoltage(c) / 5.f;
 
 		if(inputs[GAIN_INPUT].isConnected())
 			audi *= (inputs[GAIN_INPUT].getVoltage(c) / 5.f);
@@ -88,16 +103,15 @@ void BCrush::process(const ProcessArgs &args) {
 			quant ^= static_cast<int>( (inputs[XOR_INPUT].getVoltage(c) / 10.f) * ampRes );
 		if(inputs[NOT_INPUT].isConnected() && fabs(inputs[NOT_INPUT].getVoltage(c)) > 1.f)
 			quant = ~quant;
-			// quant %= static_cast<int>( (inputs[NOT_INPUT].getVoltage(c) / 10.f) * ampRes );
+			//quant %= static_cast<int>( (inputs[NOT_INPUT].getVoltage(c) / 10.f) * ampRes );
 
 		//descale output
 		outputs[AUDIO_OUTPUT].setVoltage((quant / ampRes) * 5.f, c);
 	}
 }
 
-void BCrush::onSampleRateChange() {
-	sampleRate = APP->engine->getSampleRate();
-	paramQuantities[SAMPLE_RATE_PARAM]->displayMultiplier = sampleRate;
+void BCrush::onSampleRateChange(const SampleRateChangeEvent& e) {
+	paramQuantities[SAMPLE_RATE_PARAM]->displayMultiplier = e.sampleRate;
 }
 
 struct BCrushWidget : ModuleWidget {

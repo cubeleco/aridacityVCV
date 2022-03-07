@@ -18,13 +18,15 @@ struct ClockDiv : Module {
 
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger resetTrigger;
-	
+
 	const uint_t numTicks = 16;
 	uint_t index = 1;
-	bool first = false, divideByOne = false;
+	bool reset = false;
+	bool divideByOne = false;
 
 	ClockDiv();
 	void process(const ProcessArgs &args) override;
+	void onReset(const ResetEvent &e) override;
 
 	json_t* dataToJson() override;
 	void dataFromJson(json_t *rootJ) override;
@@ -32,22 +34,26 @@ struct ClockDiv : Module {
 
 ClockDiv::ClockDiv() {
 	config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS);
-	configParam(ClockDiv::SEQ_PARAM, 0.f, 1.f, 0.f, "sequencer mode");
+	configSwitch(ClockDiv::SEQ_PARAM, 0, 1, 0, "Mode", {"Clock Divider", "Sequencer"});
+	configInput(ClockDiv::CLOCK_INPUT, "Clock");
+	configInput(ClockDiv::RESET_INPUT, "Reset");
+	configInput(ClockDiv::SEQ_INPUT, "Modulation");
 }
 
 
 void ClockDiv::process(const ProcessArgs &args) {
 	float clockVal = inputs[CLOCK_INPUT].getVoltage();
 	//increment index on clock high
-	if(inputs[CLOCK_INPUT].isConnected()) {
-		if(clockTrigger.process(clockVal)) {
-			++index;
-			if(index > numTicks)
-				index = 1;
+	if(clockTrigger.process(clockVal)) {
+		++index;
+		if(reset || index > numTicks) {
+			index = 1;
+			reset = false;
 		}
 	}
+	//trigger reset on next clock high
 	if(resetTrigger.process(inputs[RESET_INPUT].getVoltage()))
-		index = 1;
+		reset = true;
 
 	//clear all outputs when clock is low; nothing left to update
 	if(!clockTrigger.isHigh()) {
@@ -67,48 +73,36 @@ void ClockDiv::process(const ProcessArgs &args) {
 	}
 	//division output mode
 	else {
-		if(index > 1) {
-			for(uint_t d = DIV_OUTPUT+first; d < NUM_OUTPUTS; ++d)
-				outputs[d].setVoltage( ((index % (d+1)) == 0)? clockVal : 0.f);
-		}
-		else if(divideByOne) { //on divide by 1 set all outputs to input
+		if(divideByOne && index == 1) {
+			//on divide by 1 set all outputs to input
 			for(uint_t d = DIV_OUTPUT; d < NUM_OUTPUTS; ++d)
 				outputs[d].setVoltage(clockVal);
 		}
-		else { //on first tick mode
-			outputs[DIV_OUTPUT].setVoltage(clockVal);
-			for(uint_t d = DIV_OUTPUT+1; d < NUM_OUTPUTS; ++d)
-				outputs[d].setVoltage(0.f);
+		else {
+			for(uint_t d = DIV_OUTPUT; d < NUM_OUTPUTS; ++d)
+				outputs[d].setVoltage( ((index % (d+1)) == 0)? clockVal : 0.f);
 		}
 	}
 }
 
+//user manually initialized module
+void ClockDiv::onReset(const ResetEvent &e) {
+	index = 1;
+	//avoid reseting parameters
+}
+
 json_t* ClockDiv::dataToJson() {
 	json_t *rootJ = json_object();
-	
-	json_object_set_new(rootJ, "first", json_boolean(first));
+
 	json_object_set_new(rootJ, "divideByOne", json_boolean(divideByOne));
 	return rootJ;
 }
 void ClockDiv::dataFromJson(json_t *rootJ) {
-	json_t *firstJ = json_object_get(rootJ, "first");
-	if(firstJ)
-		first = json_boolean_value(firstJ);
-	
 	json_t *divOneJ = json_object_get(rootJ, "divideByOne");
 	if(divOneJ)
 		divideByOne = json_boolean_value(divOneJ);
 }
 
-struct FirstTickItem : MenuItem {
-	ClockDiv *module;
-	void onAction(const event::Action &e) override {
-		module->first ^= true;
-	}
-	void step() override {
-		rightText = CHECKMARK(module->first);
-	}
-};
 struct DivideOneItem : MenuItem {
 	ClockDiv *module;
 	void onAction(const event::Action &e) override {
@@ -129,12 +123,11 @@ struct ClockDivWidget : ModuleWidget {
 
 		addInput(createInput<SmallWhitePort>(Vec(0.75, 40), module, ClockDiv::CLOCK_INPUT));
 		addInput(createInput<SmallWhitePort>(Vec(23.25, 40), module, ClockDiv::RESET_INPUT));
-		
+
 		addParam(createParam<SmallWhiteSwitch>(Vec(6.25, 80), module, ClockDiv::SEQ_PARAM));
-		// addChild(createLight<LEDSwitchLight<GreenLight>>(Vec(5, 84), module, ClockDiv::SEQ_LIGHT));
 		addInput(createInput<SmallWhitePort>(Vec(23.25, 80), module, ClockDiv::SEQ_INPUT));
 
-		//odd div outputs 
+		//odd div outputs
 		addOutput(createOutput<SmallBlackPort>(Vec(0.75, 120), module, ClockDiv::DIV_OUTPUT));
 		addOutput(createOutput<SmallBlackPort>(Vec(0.75, 150), module, ClockDiv::DIV_OUTPUT + 2));
 		addOutput(createOutput<SmallBlackPort>(Vec(0.75, 180), module, ClockDiv::DIV_OUTPUT + 4));
@@ -160,7 +153,6 @@ struct ClockDivWidget : ModuleWidget {
 		ClockDiv *module = dynamic_cast<ClockDiv*>(this->module);
 		assert(module);
 
-		menu->addChild(construct<FirstTickItem>(&MenuItem::text, "First tick", &FirstTickItem::module, module));
 		menu->addChild(construct<DivideOneItem>(&MenuItem::text, "Divisible by 1", &DivideOneItem::module, module));
 	}
 };
