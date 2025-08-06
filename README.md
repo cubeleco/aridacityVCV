@@ -15,10 +15,8 @@ A bit crusher with bit manipulation. `rate` in and knob controls the sample rate
 
 A hard clipping limiter with inner `push` and outer limits `limit`, and center offsets `pos` for each. `pull` zeros the inner limit and `clip` enables/disables the outer limit.
 
+**Remainder Fold**
 
-Build instructions are in the [VCV Rack Manual](https://vcvrack.com/manual/Building.html#building-rack-plugins)
+A wavefolder using remainder division. `shape` changes between unsigned and signed remainder division. `fold` sets the voltage limit where folding/wrapping occurs.
 
-# Licenses
-All **source code** is copyright © 2019 aridacity and licensed under [BSD-3-Clause](LICENSE)
-
-All **panel and component graphics** in `res/*` are copyright © 2019 aridacity and licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+Build instructions are in the [VCV Rack Manual](https://vcvrack.com/manual/Building.html#Building-Rack-plugins)
