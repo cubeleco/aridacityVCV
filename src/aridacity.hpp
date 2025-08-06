@@ -8,23 +8,24 @@ extern Plugin *pluginInstance;
 extern Model *modelClockDiv;
 extern Model *modelBCrush;
 extern Model *modelClip;
+extern Model *modelRemainder;
 
 struct SmallWhiteSwitch : app::SvgSwitch {
 	SmallWhiteSwitch() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhiteSwitch0.svg")));
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhiteSwitch1.svg")));
+		addFrame(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhiteSwitch0.svg")));
+		addFrame(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhiteSwitch1.svg")));
 	}
 };
 struct WhiteSwitch : app::SvgSwitch {
 	WhiteSwitch() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteSwitch0.svg")));
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteSwitch1.svg")));
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteSwitch2.svg")));
+		addFrame(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteSwitch0.svg")));
+		addFrame(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteSwitch1.svg")));
+		addFrame(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteSwitch2.svg")));
 	}
 };
 struct LEDSwitchToggle : app::SvgSwitch {
 	LEDSwitchToggle() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/LEDSwitchToggle.svg")));
+		addFrame(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/LEDSwitchToggle.svg")));
 	}
 };
 template <typename BASE>
@@ -37,22 +38,22 @@ struct LEDSwitchLight : BASE {
 
 struct SmallWhiteKnob : RoundKnob {
 	SmallWhiteKnob() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhiteKnob.svg")));
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhiteKnob.svg")));
 	}
 };
 struct WhiteKnob : RoundKnob {
 	WhiteKnob() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteKnob.svg")));
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/whiteKnob.svg")));
 	}
 };
 
 struct SmallWhitePort : SVGPort {
 	SmallWhitePort() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhitePort.svg")));
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/smallWhitePort.svg")));
 	}
 };
 struct SmallBlackPort : SVGPort {
 	SmallBlackPort() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ComponentLibrary/smallBlackPort.svg")));
+		setSvg(Svg::load(asset::plugin(pluginInstance, "res/ComponentLibrary/smallBlackPort.svg")));
 	}
 };

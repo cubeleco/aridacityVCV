@@ -8,4 +8,5 @@ void init(Plugin *p) {
 	p->addModel(modelClockDiv);
 	p->addModel(modelBCrush);
 	p->addModel(modelClip);
+	p->addModel(modelRemainder);
 }
